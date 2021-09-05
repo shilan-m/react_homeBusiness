@@ -5,3 +5,7 @@
   width: 25%;
   text-align: center;
 }
+form {
+  display:block;
+  margin-top: 30px;
+}

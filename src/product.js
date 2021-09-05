@@ -1,6 +1,6 @@
 import React from 'react';
-import 'antd/dist/antd.css';
-import { Select,Input,Button } from 'antd';
+// import 'antd/dist/antd.css';
+// import { Select,Input,Button } from 'antd';
 
 const axios = require('axios');
 class Product extends React.Component {
@@ -52,40 +52,100 @@ class Product extends React.Component {
 class NewProductForm extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {name:'',color:'',price:''};
+        this.state = {name:'',color:'',price:'',size:0,stock:0,category:'ring',other:'',imgurl:''};
         this.handleChange = this.handleChange.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
+        //create ref for img preview
+        this.imgPreview = React.createRef();
     }
-    handleChange(event,stateName=event.target.id){
-        var newState ='';
-        if (event.target === undefined) {
-            newState = event;
-        } else {
-            newState = event.target.value
+    handleChange(event){
+        const stateName = event.target.name;
+        if (stateName ==="imgurl") {
+            var uploadImg =  event.target.files[0];
+            this.setState({[stateName]: uploadImg});
+            const preview = this.imgPreview.current;
+            const imgeUrl = URL.createObjectURL(uploadImg);
+            //************************************************* */
+            const formData = new FormData();
+            formData.append('uploaded_file', uploadImg)
+            axios.put("/imagetest",formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+              })
+              .then(function (response) {
+                // handle success
+                console.log(response);
+                })
+                .catch(function (error) {
+                    // handle error
+                    console.log(error);
+                })
+            //************************************************* */
+            preview.src = imgeUrl;
+            preview.onload = function() {
+                // free memory
+                URL.revokeObjectURL(preview.src) 
+            }
+            return;
         }
-        this.setState({[stateName]: newState.toString()});
+        const newState = event.target.value
+        this.setState({[stateName]: newState});
+    }
+    handleSubmit(event) {
+        event.preventDefault();
+        axios.put('/addNewProduct',this.state)
+            .then(function (response) {
+                // handle success
+                console.log(response);
+            })
+            .catch(function (error) {
+                // handle error
+                console.log(error);
+            })
+        //************************************************************** */
+        //**************************************************************
+        //**************************************************************
+        
     }
     render(){
+        const CategoryOptions = [
+            { value: 'ring', label: 'ring' },
+            { value: 'necklace', label: 'necklace' },
+            { value: 'bracelet', label: 'bracelet' },
+            { value: 'anklet', label: 'anklet' },
+          ]
+        const listCategory = CategoryOptions.map((option) =>
+              <option key={option.value} value={option.value}>{option.label}</option>
+        );
         return(
             <form>
                 <h2>New Product Form</h2>
                 <label htmlFor="name">Name</label>
-                <input type="text" placeholder="Enter Product Name" id="name" onChange={this.handleChange} required></input>
-                <label htmlFor="color">Color : if there are muti-color,Hold down the Ctrl (windows) or Command (Mac) button to select multiple options</label>
-                <Select
-                    mode="multiple"
-                    allowClear
-                    style={{ width: '100%' }}
-                    placeholder="Please select"
-                    onChange={(e) => this.handleChange(e,'color')}
-                    id = 'color'
-                    required
-                >
-                    <Select.Option value="black">black</Select.Option>
-                    <Select.Option value="gold">gold</Select.Option>
-                    <Select.Option value="roseGold">roseGold</Select.Option>
-                    <Select.Option value="silver">silver</Select.Option>
-                </Select>
-
+                <input type="text" placeholder="Enter Product Name" name="name" onChange={this.handleChange} required></input>
+                <br></br>
+                <label htmlFor="color">Color</label>
+                <input type="text" placeholder = "Enter any color the product has, split by comma :" name="color" onChange={this.handleChange} required></input>
+                <br></br>
+                <label htmlFor="Price">Price</label>
+                <input type="number" placeholder = "Enter price" name="price" onChange={this.handleChange} required></input>
+                <br></br>
+                <label htmlFor="size">Size</label>
+                <input type="number" placeholder = "Enter size of product if necessary" name="size" onChange={this.handleChange}></input>
+                <br></br>
+                <label htmlFor="stock">Stock Number</label>
+                <input type="number" placeholder = "Enter stock number of product" name="stock" onChange={this.handleChange}></input>
+                <br></br>
+                <label htmlFor="category">Cateogry</label>
+                <select name="category" onChange={this.handleChange}>
+                    {listCategory}
+                </select>
+                <br></br>
+                <textarea name="other" placeholder="Other Detail About the Product goes here...." onChange={this.handleChange}>
+                </textarea>
+                <input type="file" name="imgurl" accept="image/*" onChange={this.handleChange}></input>
+                <img name="upload_preview" alt="waiting for new product to upload"ref={this.imgPreview}></img>
+                <input type="button" value="Submit New Product" onClick={this.handleSubmit}></input>
             </form>
             
         )
@@ -93,13 +153,6 @@ class NewProductForm extends React.Component {
 }
 class ProductArea extends React.Component {
     render() {
-        // const productFakeList = [
-        //     {pid: 's1',name: 'the love',color :'platinum', price: '56', imgurl:'1.jpeg'},
-        //     {pid: 's2',name: 'the monkey',color :'gold', price: '50', imgurl:'2.png'},
-        //     {pid: 's4',name: 'the dophin',color :'silver', price: '100', imgurl:'3.jpeg'},
-        //     {pid: 'k1',name: 'the liuliu',color :'rose gold', price: '33', imgurl:'4.jpeg'},
-        //     {pid: 'k2',name: 'the maomao',color :'gold', price: '88', imgurl:'5.jpeg'},
-        // ]
         const productFakeList = this.props.data;
         const listItems = productFakeList.map((item) =>
             <SingleProduct key={item.PID}
@@ -128,38 +181,16 @@ class FunctionBar extends React.Component {
     constructor(props){
         super(props);
         this.state = {searchText: '',priceMax:'',priceMin:'',color:''};
-        // this.handleEnter = this.handleEnter.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
-        // this.textRef = React.createRef();
-        // this.pMinRef = React.createRef();
-        // this.pMaxRef = React.createRef();
-        // this.colorRef = React.createRef();
-        // this.buttonRef = React.createRef();
-        // this.refList = [this.textRef,this.pMinRef,this.pMaxRef,this.colorRef,this.buttonRef]
-
     }
-    // handleEnter(event) {
-    //     if(event.key !=='Enter') {
-    //         return;
-    //     }
-    //     if(event.target.id !== "submitFilter") {
-    //         var nextFocusIndex;
-    //         for (let i = 0; i < this.refList.length; i++) {
-    //             if(event.target === this.refList[i].current){
-    //                 nextFocusIndex = i + 1;
-    //                 break;
-    //             }
-    //         }
-    //         this.refList[nextFocusIndex].current.focus();
-    //     }
-    // }
     handleChange(event){
-        const stateName = event.target.id;
+        const stateName = event.target.name;
         const newState = event.target.value
         this.setState({[stateName]: newState});
     }
     handleSubmit(event) {
+        event.preventDefault();
         this.props.handleFilterChange(this.state);
     }
     render() {
@@ -174,20 +205,20 @@ class FunctionBar extends React.Component {
               <option key={option.value} value={option.value}>{option.label}</option>
         );
         return(
-          <div>
-            <input type="text" id="searchText" placeholder="search for product name" onChange={this.handleChange}/>
+          <form>
+            <input type="text" name="searchText" placeholder="search for product name" onChange={this.handleChange}/>
             <div name="price_filter">
                 <label>filter product by price: </label>
-                <input type="number" min="0" id="priceMin" onChange={this.handleChange}/>
+                <input type="number" min="0" name="priceMin" onChange={this.handleChange}/>
                 <label> ~ </label>
-                <input type="number" min="0" id="priceMax" onChange={this.handleChange}/>
+                <input type="number" min="0" name="priceMax" onChange={this.handleChange}/>
 
             </div>
-            <select id="color" defaultValue="all"  onChange={this.handleChange}>
+            <select name="color" defaultValue="all"  onChange={this.handleChange}>
                 {listColor}
             </select>
-            <button id="submitFilter"ref={this.buttonRef} onClick={this.handleSubmit}>Apply</button>
-          </div>
+            <input type="button" value = "Apply" name="submitFilter" onClick={this.handleSubmit}></input>
+          </form>
         )
     }
 }
