@@ -1,13 +1,14 @@
 import React from 'react';
-// import 'antd/dist/antd.css';
-// import { Select,Input,Button } from 'antd';
+import {Button, Form, Toast, ToastBody, ToastHeader, Modal} from 'react-bootstrap';
+
 
 const axios = require('axios');
 class Product extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {productList:[]};
+        this.state = {productList:[],createNew:false};
         this.handleFilterChange = this.handleFilterChange.bind(this);
+        this.handleCreateNew = this.handleCreateNew.bind(this);
     }
     handleFilterChange(newFilter){
         const currentComponent = this;
@@ -26,6 +27,10 @@ class Product extends React.Component {
                 console.log(error);
             })
     }
+    handleCreateNew(){
+        const currNewState = this.state.createNew;
+        this.setState({createNew:!currNewState});
+    }
     componentDidMount() {
         const currentComponent = this;
         axios.get('/filterProduct')
@@ -41,14 +46,23 @@ class Product extends React.Component {
     render() {
         return (
             <div>
-                <button id='newButton'>add new Product</button>
-                <NewProductForm/>
-                <FunctionBar data={this.state.productList} handleFilterChange = {this.handleFilterChange}/>
+                <Button className="btn btn-primary" id='newButton'  onClick={this.handleCreateNew}>add new Product</Button>
+                <br></br>
+                <Modal  show={this.state.createNew} onHide={this.handleCreateNew}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Create New Product</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <NewProductForm/>
+                    </Modal.Body>
+                </Modal>
+                <Filter data={this.state.productList} handleFilterChange = {this.handleFilterChange}/>
                 <ProductArea data={this.state.productList}/>
             </div>
         )
     }
 }
+
 class NewProductForm extends React.Component {
     constructor(props) {
         super(props);
@@ -119,37 +133,38 @@ class NewProductForm extends React.Component {
               <option key={option.value} value={option.value}>{option.label}</option>
         );
         return(
-            <form>
+            <Form>
                 <h2>New Product Form</h2>
                 <label htmlFor="name">Name</label>
-                <input type="text" placeholder="Enter Product Name" name="name" onChange={this.handleChange} required></input>
+                <Form.Control type="text" placeholder="Enter Product Name" name="name" onChange={this.handleChange} required />
                 <br></br>
                 <label htmlFor="color">Color</label>
-                <input type="text" placeholder = "Enter any color the product has, split by comma :" name="color" onChange={this.handleChange} required></input>
+                <Form.Control type="text" placeholder = "Enter any color the product has, split by comma :" name="color" onChange={this.handleChange} required></Form.Control>
                 <br></br>
                 <label htmlFor="Price">Price</label>
-                <input type="number" placeholder = "Enter price" name="price" onChange={this.handleChange} required></input>
+                <Form.Control type="number" placeholder = "Enter price" name="price" onChange={this.handleChange} required></Form.Control>
                 <br></br>
                 <label htmlFor="size">Size</label>
-                <input type="number" placeholder = "Enter size of product if necessary" name="size" onChange={this.handleChange}></input>
+                <Form.Control type="number" placeholder = "Enter size of product if necessary" name="size" onChange={this.handleChange}></Form.Control>
                 <br></br>
                 <label htmlFor="stock">Stock Number</label>
-                <input type="number" placeholder = "Enter stock number of product" name="stock" onChange={this.handleChange}></input>
+                <Form.Control type="number" placeholder = "Enter stock number of product" name="stock" onChange={this.handleChange}></Form.Control>
                 <br></br>
                 <label htmlFor="category">Cateogry</label>
-                <select name="category" onChange={this.handleChange}>
+                <select className="form-control" name="category" onChange={this.handleChange}>
                     {listCategory}
                 </select>
                 <br></br>
                 <textarea name="other" placeholder="Other Detail About the Product goes here...." onChange={this.handleChange}>
                 </textarea>
-                <input type="file" name="imgurl" accept="image/*" onChange={this.handleChange}></input>
+                <Form.Control type="file" name="imgurl" accept="image/*" onChange={this.handleChange}></Form.Control>
                 <img name="upload_preview" alt="waiting for new product to upload"ref={this.imgPreview}></img>
-                <input type="button" value="Submit New Product" onClick={this.handleSubmit}></input>
-            </form>
+                <Form.Control type="button" value="Submit New Product" onClick={this.handleSubmit}></Form.Control>
+            </Form>
             
         )
     }
+
 }
 class ProductArea extends React.Component {
     render() {
@@ -159,7 +174,7 @@ class ProductArea extends React.Component {
               item={item} />
         );
         return (
-            listItems
+             <div className='productArea'>{listItems}</div>
         );
     }
 }
@@ -177,7 +192,7 @@ function SingleProduct(props) {
     )
 }
 
-class FunctionBar extends React.Component {
+class Filter extends React.Component {
     constructor(props){
         super(props);
         this.state = {searchText: '',priceMax:'',priceMin:'',color:''};
@@ -205,20 +220,21 @@ class FunctionBar extends React.Component {
               <option key={option.value} value={option.value}>{option.label}</option>
         );
         return(
-          <form>
-            <input type="text" name="searchText" placeholder="search for product name" onChange={this.handleChange}/>
+          <Form className="filter">
+            <label>text search </label>
+            <Form.Control type="text" name="searchText" placeholder="search for product name" onChange={this.handleChange}/>
+            <label>price range </label>
             <div name="price_filter">
-                <label>filter product by price: </label>
-                <input type="number" min="0" name="priceMin" onChange={this.handleChange}/>
-                <label> ~ </label>
-                <input type="number" min="0" name="priceMax" onChange={this.handleChange}/>
-
+                <Form.Control type="number" min="0" name="priceMin" onChange={this.handleChange} style={{"width" : "30%","display" : "inline-block"}}></Form.Control>
+                <label>  ~  </label>
+                <Form.Control type="number" min="0" name="priceMax" onChange={this.handleChange} style={{"width" : "30%","display" : "inline-block"}}/>
             </div>
-            <select name="color" defaultValue="all"  onChange={this.handleChange}>
+            <label>color </label>
+            <select  className="form-control" name="color" defaultValue="all"  onChange={this.handleChange}>
                 {listColor}
             </select>
-            <input type="button" value = "Apply" name="submitFilter" onClick={this.handleSubmit}></input>
-          </form>
+            <Form.Control type="button" value = "Apply" name="submitFilter" onClick={this.handleSubmit}/>
+          </Form>
         )
     }
 }

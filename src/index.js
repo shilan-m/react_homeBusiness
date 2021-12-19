@@ -1,17 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
 import contactLogo from './contact.png'
 import Product from './product'
+import './index.css';
 
 function TopHeader() {
   return(
-    <div> 
-      <label> LiuBao Jewerry</label>
-      <br/>
-      <label>the best jewerry factory</label>
-      <br/>
-      <img src={contactLogo} alt = "contactLogo"/>
+    <div id="topHeader"> 
+      <h1> LiuBao Jewerry</h1>
+      <label>We are better than yesterday</label>
+      {/* <br/>
+      <img src={contactLogo} alt = "contactLogo"/> */}
     </div>
   )
 }

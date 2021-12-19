@@ -1,11 +1,29 @@
 .singleProduct {
   display: inline-block;
-  margin-top: 30px;
-  height: 200px;
-  width: 25%;
+  height: 400px;
+  width: 300px;
   text-align: center;
 }
-form {
-  display:block;
-  margin-top: 30px;
+
+#topHeader{
+  background-color: cadetblue;
+  text-align: center;
+}
+.filter{
+  display: inline-block;
+  width: 25%;
+  min-width: 250px;
+  vertical-align: top;
+}
+
+.productArea{
+  display: inline-block;
+  width: 75%;
+  height: 800px;
+  /* overflow: hidden; */
+  overflow:scroll
+}
+
+body{
+  margin: 1%;
 }
