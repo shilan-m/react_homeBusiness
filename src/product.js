@@ -1,14 +1,15 @@
 import React from 'react';
-import {Button, Form, Toast, ToastBody, ToastHeader, Modal} from 'react-bootstrap';
+import {Button, Form, FormGroup, Modal} from 'react-bootstrap';
+import axios from 'axios';
 
 
-const axios = require('axios');
+
 class Product extends React.Component {
     constructor(props) {
         super(props);
         this.state = {productList:[],createNew:false};
         this.handleFilterChange = this.handleFilterChange.bind(this);
-        this.handleCreateNew = this.handleCreateNew.bind(this);
+        this.handleModalOpenClose = this.handleModalOpenClose.bind(this);
     }
     handleFilterChange(newFilter){
         const currentComponent = this;
@@ -17,7 +18,7 @@ class Product extends React.Component {
               delete newFilter[key];
             }
         }
-        axios.get('/filterProduct',{ params: newFilter })
+        axios.get('/product/filterProduct',{ params: newFilter })
             .then(function (response) {
                 // handle success
                 currentComponent.setState({productList:response.data})
@@ -27,13 +28,13 @@ class Product extends React.Component {
                 console.log(error);
             })
     }
-    handleCreateNew(){
+    handleModalOpenClose(){
         const currNewState = this.state.createNew;
         this.setState({createNew:!currNewState});
     }
     componentDidMount() {
         const currentComponent = this;
-        axios.get('/filterProduct')
+        axios.get('/product/filterProduct')
             .then(function (response) {
                 // handle success
                 currentComponent.setState({productList:response.data})
@@ -46,14 +47,14 @@ class Product extends React.Component {
     render() {
         return (
             <div>
-                <Button className="btn btn-primary" id='newButton'  onClick={this.handleCreateNew}>add new Product</Button>
+                <Button className="btn btn-primary" id='newButton'  onClick={this.handleModalOpenClose}>add new Product</Button>
                 <br></br>
-                <Modal  show={this.state.createNew} onHide={this.handleCreateNew}>
+                <Modal  show={this.state.createNew} onHide={this.handleModalOpenClose}>
                     <Modal.Header closeButton>
                         <Modal.Title>Create New Product</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <NewProductForm/>
+                        <NewProductForm handleModalOpenClose = {this.handleModalOpenClose}/>
                     </Modal.Body>
                 </Modal>
                 <Filter data={this.state.productList} handleFilterChange = {this.handleFilterChange}/>
@@ -66,7 +67,7 @@ class Product extends React.Component {
 class NewProductForm extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {name:'',color:'',price:'',size:0,stock:0,category:'ring',other:'',imgurl:''};
+        this.state = {validated:false, name:null,color:null,price:0,size:null,stock:0,category:null,other:null,imgurl:null};
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         //create ref for img preview
@@ -76,30 +77,19 @@ class NewProductForm extends React.Component {
         const stateName = event.target.name;
         if (stateName ==="imgurl") {
             var uploadImg =  event.target.files[0];
-            this.setState({[stateName]: uploadImg});
             const preview = this.imgPreview.current;
+            // handle no image select
+            if(uploadImg === undefined) {
+                preview.src = null;
+                this.setState({[stateName]: null});
+                return;
+            }
+            this.setState({[stateName]: uploadImg});
             const imgeUrl = URL.createObjectURL(uploadImg);
-            //************************************************* */
-            const formData = new FormData();
-            formData.append('uploaded_file', uploadImg)
-            axios.put("/imagetest",formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-              })
-              .then(function (response) {
-                // handle success
-                console.log(response);
-                })
-                .catch(function (error) {
-                    // handle error
-                    console.log(error);
-                })
-            //************************************************* */
             preview.src = imgeUrl;
             preview.onload = function() {
                 // free memory
-                URL.revokeObjectURL(preview.src) 
+                URL.revokeObjectURL(preview.src); 
             }
             return;
         }
@@ -107,19 +97,45 @@ class NewProductForm extends React.Component {
         this.setState({[stateName]: newState});
     }
     handleSubmit(event) {
+        const currComponent = this;
         event.preventDefault();
-        axios.put('/addNewProduct',this.state)
+        const form = event.currentTarget;
+        if (form.checkValidity() === false) {
+            event.preventDefault();
+            // event.stopPropagation();
+            console.log("not valid")
+            this.setState({validated:true});
+            return;
+        }
+
+        // console.log("form valid")
+
+        const formData = new FormData();
+        for (const stateName in this.state){
+            const stateValue = this.state[stateName];
+            if(stateValue === null || stateName === 'validated'){
+                continue;
+            }
+            formData.append(stateName,this.state[stateName])
+        }
+        axios.put('/product/addNewProduct',formData
+        , {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+          }
+          )
             .then(function (response) {
                 // handle success
                 console.log(response);
+                // close Modal 
+                currComponent.props.handleModalOpenClose();
+                
             })
             .catch(function (error) {
                 // handle error
                 console.log(error);
             })
-        //************************************************************** */
-        //**************************************************************
-        //**************************************************************
         
     }
     render(){
@@ -133,33 +149,36 @@ class NewProductForm extends React.Component {
               <option key={option.value} value={option.value}>{option.label}</option>
         );
         return(
-            <Form>
+            <Form onSubmit={this.handleSubmit} noValidate validated={this.state.validated}>
                 <h2>New Product Form</h2>
-                <label htmlFor="name">Name</label>
-                <Form.Control type="text" placeholder="Enter Product Name" name="name" onChange={this.handleChange} required />
-                <br></br>
-                <label htmlFor="color">Color</label>
-                <Form.Control type="text" placeholder = "Enter any color the product has, split by comma :" name="color" onChange={this.handleChange} required></Form.Control>
-                <br></br>
-                <label htmlFor="Price">Price</label>
-                <Form.Control type="number" placeholder = "Enter price" name="price" onChange={this.handleChange} required></Form.Control>
-                <br></br>
+                <FormGroup validated={false} >
+                    <label htmlFor="name">Name</label>
+                    <Form.Control type="text" placeholder="Enter Product Name" name="name" onChange={this.handleChange} required />
+                    <br></br>
+                    <label htmlFor="color">Color</label>
+                    <Form.Control type="text" placeholder = "Enter any color the product has, split by comma :" name="color" onChange={this.handleChange} required></Form.Control>
+                    <br></br>
+                    <label htmlFor="Price">Price</label>
+                    <Form.Control type="number" placeholder = "Enter price" name="price" onChange={this.handleChange} required min='1' step='0.01' ></Form.Control>
+                    <br></br>
+                    <label htmlFor="stock">Stock Number</label>
+                    <Form.Control type="number" placeholder = "Enter stock number of product" name="stock" onChange={this.handleChange} required min="0"></Form.Control>
+                    <br></br>
+                    <label htmlFor="category">Cateogry</label>
+                    <select className="form-control" name="category" defaultValue="" onChange={this.handleChange} required>
+                        <option hidden="" disabled="disabled"  value="">Select Category</option>
+                        {listCategory}
+                    </select>
+                    <br></br>
+                </FormGroup>
                 <label htmlFor="size">Size</label>
                 <Form.Control type="number" placeholder = "Enter size of product if necessary" name="size" onChange={this.handleChange}></Form.Control>
-                <br></br>
-                <label htmlFor="stock">Stock Number</label>
-                <Form.Control type="number" placeholder = "Enter stock number of product" name="stock" onChange={this.handleChange}></Form.Control>
-                <br></br>
-                <label htmlFor="category">Cateogry</label>
-                <select className="form-control" name="category" onChange={this.handleChange}>
-                    {listCategory}
-                </select>
                 <br></br>
                 <textarea name="other" placeholder="Other Detail About the Product goes here...." onChange={this.handleChange}>
                 </textarea>
                 <Form.Control type="file" name="imgurl" accept="image/*" onChange={this.handleChange}></Form.Control>
                 <img name="upload_preview" alt="waiting for new product to upload"ref={this.imgPreview}></img>
-                <Form.Control type="button" value="Submit New Product" onClick={this.handleSubmit}></Form.Control>
+                <Form.Control type="submit" value="Submit New Product"></Form.Control>
             </Form>
             
         )
@@ -170,8 +189,7 @@ class ProductArea extends React.Component {
     render() {
         const productFakeList = this.props.data;
         const listItems = productFakeList.map((item) =>
-            <SingleProduct key={item.PID}
-              item={item} />
+            <SingleProduct key={item.PID} item={item} />
         );
         return (
              <div className='productArea'>{listItems}</div>
@@ -220,9 +238,9 @@ class Filter extends React.Component {
               <option key={option.value} value={option.value}>{option.label}</option>
         );
         return(
-          <Form className="filter">
+          <Form id="filterForm">
             <label>text search </label>
-            <Form.Control type="text" name="searchText" placeholder="search for product name" onChange={this.handleChange}/>
+            <Form.Control type="text" name="searchText" placeholder="search for product name" onChange={this.handleChange} />
             <label>price range </label>
             <div name="price_filter">
                 <Form.Control type="number" min="0" name="priceMin" onChange={this.handleChange} style={{"width" : "30%","display" : "inline-block"}}></Form.Control>
@@ -233,7 +251,7 @@ class Filter extends React.Component {
             <select  className="form-control" name="color" defaultValue="all"  onChange={this.handleChange}>
                 {listColor}
             </select>
-            <Form.Control type="button" value = "Apply" name="submitFilter" onClick={this.handleSubmit}/>
+            <Form.Control type="submit" value = "Apply" onSubmit={this.handleSubmit}/>
           </Form>
         )
     }

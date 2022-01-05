@@ -1,35 +1,36 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import contactLogo from './contact.png'
-import Product from './product'
+import Product from './product';
+import Customers from './customer';
 import './index.css';
+import {BrowserRouter, Routes, Route} from "react-router-dom";
 
 function TopHeader() {
   return(
     <div id="topHeader"> 
       <h1> LiuBao Jewerry</h1>
       <label>We are better than yesterday</label>
-      {/* <br/>
-      <img src={contactLogo} alt = "contactLogo"/> */}
     </div>
   )
 }
-function MainBody() {
+function App() {
   return (
     <React.Fragment>
       <TopHeader />
-      <Product />
+      <Routes>
+        <Route path="products" element={<Product />} />
+        <Route path="customers" element={<Customers />} />
+      </Routes>
     </React.Fragment>
   )
 }
 
-
-
-  
-  ReactDOM.render(
-    <MainBody />,
-    document.getElementById('root')
-  );
+ReactDOM.render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>,
+  document.getElementById("root")
+);
 
 
  

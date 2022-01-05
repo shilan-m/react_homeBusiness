@@ -1,6 +1,6 @@
 var connection = require('../dbConfig')
 
-function selectReuslt(queryObj,callback){
+function selectProducts(queryObj,callback){
     var conditions = [];
     if ("searchText" in queryObj) {
         conditions.push("name LIKE \'%" + queryObj.searchText + "%\'")
@@ -25,7 +25,15 @@ function selectReuslt(queryObj,callback){
     }
     console.log(query);
     connection.query(query,callback);
-
 }
-module.exports = {selectReuslt}
+function insertAProduct(queryObj,callback){
+    const cols = Object.keys(queryObj);
+    const values = Object.values(queryObj);
+    console.log(cols)
+    console.log(values)
+    var insertQuery = "Insert into products (" + cols + ") VALUES ("+values+")";
+    console.log("query:: "+insertQuery);
+    // connection.query(insertQuery,callback);
+}
+module.exports = {selectProducts, insertAProduct}
 
